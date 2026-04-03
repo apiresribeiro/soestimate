@@ -24,19 +24,17 @@ void controller_receive_measurement(MeasurementInfo *m, int controller_id, struc
 };
 
 void controller_process_measurement(MeasurementInfo *m, int controller_id, struct info_container *info) {
-  if (!(m->sensor_id == controller_id)) {
-    info->num_invalid_measurements++;
-    *info->terminate = 1; // FIXME: Colocar um erro?
-  }
-
   // Incrementar o número de medições
   info->num_generated_measurements++;
-  m->state = VALID;
 
   // Se for inválido, então incrementar também o número de medições inválidas
   if (!is_valid_measurement(m->value)) {
     info->num_invalid_measurements++;
     m->state = INVALID;
+  } else {
+    // Se for válido, coloca o seu id no struct
+    m->state = VALID;
+    m->controller_id = controller_id;
   }
 };
 
