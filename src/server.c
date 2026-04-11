@@ -117,9 +117,8 @@ int server_process_measurement(MeasurementInfo *m, int server_id, struct info_co
 void server_print_estimate(int server_id, int m_id, double estimate, int valid_count) {
   // Se houver pelo menos um valor válido, imprimir a informação
   if (valid_count > 0) {
-    printf("[Server %d] New Estimate : cycle %d = %f (valid_count = %d \n", server_id, m_id, estimate, valid_count);
+    printf("[Server %d] New estimate: cycle %d = %.4f (valid_count=%d)\n", server_id, m_id, estimate, valid_count);
   } else {
-    // TODO: Dúvida, tenho que imprimir o NULL, ou posso deixar a mensagem?
-    printf("[Server %d] Cycle %d all measurements were invalid \n", server_id, m_id);
+    printf("[Server %d] Cycle %d all measurements were invalid\n", server_id, m_id);
   }
 };
