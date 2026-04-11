@@ -29,9 +29,6 @@ void controller_receive_measurement(MeasurementInfo *m, int controller_id, struc
 };
 
 void controller_process_measurement(MeasurementInfo *m, int controller_id, struct info_container *info) {
-  // Incrementar o número de medições
-  info->num_generated_measurements[controller_id]++;
-
   // Se for inválido, então incrementar também o número de medições inválidas
   if (!is_valid_measurement(m->value)) {
     info->num_invalid_measurements[controller_id]++;
