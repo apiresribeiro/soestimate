@@ -1,5 +1,7 @@
 #include "memory.h"
+#include "process.h"
 #include <stdio.h>
+#include <stdlib.h>
 
 struct info_container {
   int n_sensors;    // number of sensor processes
@@ -20,29 +22,87 @@ struct info_container {
   int *terminate;          // termination flag (1 means the system must stop)
 };
 
-void main_args(int argc, char *argv[], struct info_container *info) {};
+void main_args(int argc, char *argv[], struct info_container *info) {
+  info->n_sensors = atoi(argv[1]);
+  info->n_servers = atoi(argv[2]);
+  info->buffers_size = atoi(argv[3]);
+};
 
-void create_dynamic_memory_structs(struct info_container *info,
-                                   struct buffers *buffs) {};
+void create_dynamic_memory_structs(struct info_container *info, struct buffers *buffs) {
+  int tamanhoBuffer = info->buffers_size * sizeof(MeasurementInfo);
 
-void create_shared_memory_structs(struct info_container *info,
-                                  struct buffers *buffs) {};
+  buffs->buff_main_sensors = allocate_dynamic_memory(sizeof (struct circ_buffer)); //aloca o espaço para a estrutura
+  buffs->buff_main_sensors->ptrs = allocate_dynamic_memory(sizeof (struct pointers))
+  buffs->buff_main_sensors->ptrs->in = 0;
+  buffs->buff_main_sensors->ptrs->out = 0;
+  buffs->buff_main_sensors->buffer = allocate_dynamic_memory(tamanhoBuffer); //aloca o espaço para os dados (array de measurementInfo)
+  for (int i = 0; i < info->buffers_size; i++){
+    buffs->buff_main_sensors->buffer[i].counter_sensors = info->n_sensors;        
+    buffs->buff_main_sensors->buffer[i].counter_servers = info->n_servers;
+  }
+  
+};
 
-void destroy_dynamic_memory_structs(struct info_container *info,
-                                    struct buffers *buffs) {};
+void create_shared_memory_structs(struct info_container *info, struct buffers *buffs) {
+  char nome_buffer[64]; //buffer para guardar o nome
+  uid_t uid = getuid(); 
+  int tamanhoBuffer = info->buffers_size * sizeof(MeasurementInfo);
+  int tamanhoTotal = sizeof(struct ra_buffer) + tamanhoBuffer;
 
-void destroy_shared_memory_structs(struct info_container *info,
-                                   struct buffers *buffs) {};
+  //buffer memoria partilhada sensor-controller
+  snprintf(nome_buffer, sizeof(nome_buffer), "%d_scname", uid); //forma de escrever o resultado do getuid numa string
+  buffs->buff_sensors_controllers = create_shared_memory(nome_buffer, tamanhoTotal);
+  for (int i = 0; i < info->buffers_size; i++){
+    buffs->buff_sensors_controllers->buffer[i].counter_sensors = info->n_sensors;
+    buffs->buff_sensors_controllers->buffer[i].counter_servers = info->n_servers;
+  }
+  
+  //buffer memoria partilhada controller-server
+  snprintf(nome_buffer, sizeof(nome_buffer), "%d_csname", uid);
+  buffs->buff_controllers_server = create_shared_memory(nome_buffer, tamanhoTotal); 
+  for (int i = 0; i < info->buffers_size; i++){
+    buffs->buff_controllers_server->buffer[i].counter_sensors = info->n_sensors;  //buffer[0]??
+    buffs->buff_controllers_server->buffer[i].counter_servers = info->n_servers;
+  }
+};
 
-void create_processes(struct info_container *info, struct buffers *buffs) {};
+void destroy_dynamic_memory_structs(struct info_container *info, struct buffers *buffs) {
+  deallocate_dynamic_memory(buffs->buff_main_sensors->buffer);
+  deallocate_dynamic_memory(buffs->buff_main_sensors->ptrs);
+  deallocate_dynamic_memory(buffs->buff_main_sensors);
+};
+
+void destroy_shared_memory_structs(struct info_container *info, struct buffers *buffs) {
+  char nome_buffer[64]; //buffer para guardar o nome
+  uid_t uid = getuid(); 
+  int tamanhoBuffer = info->buffers_size * sizeof(MeasurementInfo);
+  int tamanhoTotal = sizeof(struct ra_buffer) + tamanhoBuffer;
+
+  snprintf(nome_buffer, sizeof(nome_buffer), "%d_scname", uid);
+  destroy_shared_memory(nome_buffer, buffs->buff_sensors_controllers, tamanhoTotal);
+
+  snprintf(nome_buffer, sizeof(nome_buffer), "%d_csname", uid);
+  destroy_shared_memory(nome_buffer, buffs->buff_controllers_server, tamanhoTotal);
+
+};
+
+void create_processes(struct info_container *info, struct buffers *buffs) {
+  //process.h
+};
 
 void user_interaction(struct info_container *info, struct buffers *buffs) {};
 
 void write_final_statistics(struct info_container *info) {};
 
-void end_execution(struct info_container *info, struct buffers *buffs) {};
+void end_execution(struct info_container *info, struct buffers *buffs) {
+  destroy_dynamic_memory_structs(info, buffs);
+  destroy_shared_memory_structs(info, buffs);
+  *info->terminate = 1;
+};
 
-void wait_processes(struct info_container *info) {};
+void wait_processes(struct info_container *info) {
+  //process.h
+};
 
 void read_estimate(struct info_container *info, int m_id) {};
 
@@ -50,4 +110,6 @@ void print_stat(struct info_container *info) {};
 
 void help(void) {};
 
-int main(int argc, char *argv[]) {};
+int main(int argc, char *argv[]) {
+  return 0;
+};
