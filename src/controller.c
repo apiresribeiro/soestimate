@@ -5,18 +5,29 @@
 #include "stdbool.h"
 
 int execute_controller(int controller_id, struct info_container *info, struct buffers *buffs) {
-  // Variável local de modo a não mexer diretamente no buffer partilhado
+  // Estrutura local para guardar a medição lida do buffer partilhado.
   MeasurementInfo m;
+  // Loop principal do controller: continua até a flag de terminação ficar ativa.
+  while (!(*info->terminate)) {
+    // Tenta receber a próxima medição destinada a este controller.
+    controller_receive_measurement(&m, controller_id, info, buffs);
 
-  // Receber a medição
-  controller_receive_measurement(&m, controller_id, info, buffs);
+    // Se a terminação foi ativada enquanto esperava, sai imediatamente.
+    if (*info->terminate) {
+      break;
+    }
 
-  // Validar a medição
-  controller_process_measurement(&m, controller_id, info);
+    // m_id = -1 significa que não foi lida uma nova medição válida nesta tentativa.
+    if (m.m_id == -1) {
+      continue;
+    }
 
-  // Mandar medição para servidor
-  controller_send_measurement(&m, info, buffs);
-
+    // Valida a medição
+    controller_process_measurement(&m, controller_id, info);
+    // Envia a medição processada para o buffer controller -> server.
+    controller_send_measurement(&m, info, buffs);
+  }
+  // Terminação normal do processo controller.
   return 0;
 };
 
@@ -29,14 +40,15 @@ void controller_receive_measurement(MeasurementInfo *m, int controller_id, struc
 };
 
 void controller_process_measurement(MeasurementInfo *m, int controller_id, struct info_container *info) {
+  // Coloca o id do controllador no struct
+  m->controller_id = controller_id;
   // Se for inválido, então incrementar também o número de medições inválidas
   if (!is_valid_measurement(m->value)) {
     info->num_invalid_measurements[controller_id]++;
     m->state = INVALID;
   } else {
-    // Se for válido, coloca o seu id no struct
+    // Coloca o estado a válido
     m->state = VALID;
-    m->controller_id = controller_id;
   }
 };
 
