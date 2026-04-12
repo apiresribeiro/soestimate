@@ -40,7 +40,6 @@ void create_dynamic_memory_structs(struct info_container *info, struct buffers *
     buffs->buff_main_sensors->buffer[i].counter_sensors = info->n_sensors;        
     buffs->buff_main_sensors->buffer[i].counter_servers = info->n_servers;
   }
-  
 };
 
 void create_shared_memory_structs(struct info_container *info, struct buffers *buffs) {
@@ -108,7 +107,14 @@ void read_estimate(struct info_container *info, int m_id) {};
 
 void print_stat(struct info_container *info) {};
 
-void help(void) {};
+void help(void) {
+  printf("Available operations: \n"); 
+  printf(" measure - start a measurement cycle with one measurement per sensor. \n"); 
+  printf(" read <cycle id> - read the estimate for a cycle. \n"); 
+  printf(" stat - print the current system state. \n"); 
+  printf(" help - show this menu. \n");
+  printf(" end - terminates SOestimate. \n"); 
+};
 
 int main(int argc, char *argv[]) {
   return 0;
