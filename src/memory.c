@@ -174,7 +174,50 @@ void read_sensor_controller_buffer(struct ra_buffer *buffer, int controller_id, 
 };
 
 int write_controller_servers_buffer(struct ra_buffer *buffer, int buffer_size, const MeasurementInfo *m) {
-  return 1;
+  if (buffer == NULL || buffer->ptrs == NULL || buffer->buffer == NULL || buffer_size <= 0) {
+    return 0;
+  }
+
+  for (int i = 0; i < buffer_size; i++) {
+    if (buffer->ptrs[i] == 0) {
+      buffer->buffer[i] = *m;
+      // Marca como ocupado
+      buffer->ptrs[i] = 1;
+      return 1;
+    }
+  }
+
+  // Cheio
+  return 0;
 };
 
-void read_controller_servers_buffer(struct ra_buffer *buffer, int buffer_size, int expected_m_id, int expected_controller_id, MeasurementInfo *m) {};
+void read_controller_servers_buffer(struct ra_buffer *buffer, int buffer_size, int expected_m_id, int expected_controller_id, MeasurementInfo *m) {
+  if (m == NULL) {
+    return;
+  }
+
+  // Default, não há request
+  m->m_id = -1;
+
+  if (buffer == NULL || buffer->buffer == NULL || buffer->ptrs == NULL || buffer_size <= 0) {
+    return;
+  }
+
+  for (int i = 0; i < buffer_size; i++) {
+    MeasurementInfo *atual = &buffer->buffer[i];
+    if (buffer->ptrs[i] == 1 && buffer->buffer[i].controller_id == expected_controller_id) {
+      if (atual->m_id == expected_m_id && atual->counter_servers > 0) {
+        // Coloca a cópia local no controller
+        *m = *atual;
+        // Decrementa o counter de servers
+        atual->counter_servers--;
+
+        if (atual->counter_servers == 0) {
+          // Liberta a slot
+          buffer->ptrs[i] = 0;
+        }
+        return;
+      }
+    }
+  }
+};
