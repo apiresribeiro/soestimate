@@ -55,6 +55,7 @@ void *create_shared_memory(char *name, int size) {
   close(fd);
 
   if (ptr == MAP_FAILED) {
+    shm_unlink(shm_name);
     return NULL;
   }
   // Mete todos os valores a 0
@@ -132,7 +133,7 @@ void read_main_sensors_buffer(struct circ_buffer *buffer, int buffer_size, int e
 };
 
 int write_sensor_controller_buffer(struct ra_buffer *buffer, int buffer_size, const MeasurementInfo *m) {
-  if (buffer == NULL || buffer->ptrs == NULL || buffer->buffer == NULL || buffer_size <= 0) {
+  if (buffer == NULL || buffer->ptrs == NULL || buffer->buffer == NULL || buffer_size <= 0 || m == NULL) {
     return 0;
   }
 
@@ -174,7 +175,7 @@ void read_sensor_controller_buffer(struct ra_buffer *buffer, int controller_id, 
 };
 
 int write_controller_servers_buffer(struct ra_buffer *buffer, int buffer_size, const MeasurementInfo *m) {
-  if (buffer == NULL || buffer->ptrs == NULL || buffer->buffer == NULL || buffer_size <= 0) {
+  if (buffer == NULL || buffer->ptrs == NULL || buffer->buffer == NULL || buffer_size <= 0 || m == NULL) {
     return 0;
   }
 

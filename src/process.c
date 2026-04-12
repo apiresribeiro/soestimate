@@ -38,7 +38,7 @@ int launch_process(enum process_type process_type, int process_id, struct info_c
 
 int wait_process(int process_id) {
   int status;
-  if (waitpid(process_id, &status, 0)) {
+  if (waitpid(process_id, &status, 0) == -1) {
     return -1;
   }
   if (WIFEXITED(status)) {
