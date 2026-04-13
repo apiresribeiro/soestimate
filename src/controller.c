@@ -1,8 +1,8 @@
-#include "controller.h"
-#include "main.h"
-#include "memory.h"
-#include "random_measurement.h"
-#include "stdbool.h"
+#include "../inc/controller.h"
+#include "../inc/main.h"
+#include "../inc/memory.h"
+#include "../inc/random_measurement.h"
+#include <stdbool.h>
 
 int execute_controller(int controller_id, struct info_container *info, struct buffers *buffs) {
   // Estrutura local para guardar a medição lida do buffer partilhado.
