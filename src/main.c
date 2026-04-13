@@ -5,6 +5,10 @@
 #include <unistd.h>
 
 void main_args(int argc, char *argv[], struct info_container *info) {
+  if (argc != 3) {
+    printf("[Main] Usage: ./SOestimate n_sensors n_servers buff_size");
+    exit(0);
+  }
   info->n_sensors = atoi(argv[1]);
   info->n_servers = atoi(argv[2]);
   info->buffers_size = atoi(argv[3]);
@@ -13,36 +17,51 @@ void main_args(int argc, char *argv[], struct info_container *info) {
 void create_dynamic_memory_structs(struct info_container *info, struct buffers *buffs) {
   int tamanhoBuffer = info->buffers_size * sizeof(MeasurementInfo);
 
-  buffs->buff_main_sensors = allocate_dynamic_memory(sizeof(struct circ_buffer)); // aloca o espaço para a estrutura
-  buffs->buff_main_sensors->ptrs = allocate_dynamic_memory(sizeof(struct pointers));
+  // Main-sensor buffer
+  buffs->buff_main_sensors = allocate_dynamic_memory(sizeof(struct circ_buffer));    // Aloca o espaço para o buffer circular
+  buffs->buff_main_sensors->buffer = allocate_dynamic_memory(tamanhoBuffer);         // Aloca o espaço para os dados (array de measurementInfo)
+  buffs->buff_main_sensors->ptrs = allocate_dynamic_memory(sizeof(struct pointers)); // Aloca espaço para os pointers do buffer cicrular
+  // Inicializa os pointers a 0
   buffs->buff_main_sensors->ptrs->in = 0;
   buffs->buff_main_sensors->ptrs->out = 0;
-  buffs->buff_main_sensors->buffer = allocate_dynamic_memory(tamanhoBuffer); // aloca o espaço para os dados (array de measurementInfo)
+
+  // Sensor-controller buffer
+  buffs->buff_sensors_controllers = allocate_dynamic_memory(sizeof(struct ra_buffer));
+  buffs->buff_sensors_controllers->buffer = allocate_dynamic_memory(tamanhoBuffer);
+  buffs->buff_sensors_controllers->ptrs = allocate_dynamic_memory(sizeof(struct pointers));
+
+  // Controller-server buffer
+  buffs->buff_controllers_servers = allocate_dynamic_memory(sizeof(struct ra_buffer));
+  buffs->buff_controllers_servers->buffer = allocate_dynamic_memory(tamanhoBuffer);
+  buffs->buff_controllers_servers->ptrs = allocate_dynamic_memory(sizeof(struct pointers));
+};
+
+void create_shared_memory_structs(struct info_container *info, struct buffers *buffs) {
+  int tamanhoBuffer = info->buffers_size * sizeof(MeasurementInfo);
+  int tamanhoRA = sizeof(struct ra_buffer) + tamanhoBuffer;
+  int tamanhoCirc = sizeof(struct circ_buffer) + tamanhoBuffer;
+
+  // Buffer memória partilhada main-sensor
+  buffs->buff_main_sensors->buffer = create_shared_memory(ID_SHM_MAIN_SENSORS_BUFFER, tamanhoCirc);
+  buffs->buff_main_sensors->ptrs = create_shared_memory(ID_SHM_MAIN_SENSORS_PTR, tamanhoCirc);
   for (int i = 0; i < info->buffers_size; i++) {
     buffs->buff_main_sensors->buffer[i].counter_sensors = info->n_sensors;
     buffs->buff_main_sensors->buffer[i].counter_servers = info->n_servers;
   }
-};
 
-void create_shared_memory_structs(struct info_container *info, struct buffers *buffs) {
-  char nome_buffer[64]; // buffer para guardar o nome
-  uid_t uid = getuid();
-  int tamanhoBuffer = info->buffers_size * sizeof(MeasurementInfo);
-  int tamanhoTotal = sizeof(struct ra_buffer) + tamanhoBuffer;
-
-  // buffer memoria partilhada sensor-controller
-  snprintf(nome_buffer, sizeof(nome_buffer), "%d_scname", uid); // forma de escrever o resultado do getuid numa string
-  buffs->buff_sensors_controllers = create_shared_memory(nome_buffer, tamanhoTotal);
+  // Buffer memoria partilhada sensor-controller
+  buffs->buff_sensors_controllers->buffer = create_shared_memory(ID_SHM_SENSORS_CONTROLLERS_BUFFER, tamanhoRA);
+  buffs->buff_sensors_controllers->ptrs = create_shared_memory(ID_SHM_SENSORS_CONTROLLERS_PTR, tamanhoRA);
   for (int i = 0; i < info->buffers_size; i++) {
     buffs->buff_sensors_controllers->buffer[i].counter_sensors = info->n_sensors;
     buffs->buff_sensors_controllers->buffer[i].counter_servers = info->n_servers;
   }
 
   // buffer memoria partilhada controller-server
-  snprintf(nome_buffer, sizeof(nome_buffer), "%d_csname", uid);
-  buffs->buff_controllers_servers = create_shared_memory(nome_buffer, tamanhoTotal);
+  buffs->buff_controllers_servers->buffer = create_shared_memory(ID_SHM_SENSORS_CONTROLLERS_BUFFER, tamanhoRA);
+  buffs->buff_controllers_servers->ptrs = create_shared_memory(ID_SHM_SENSORS_CONTROLLERS_PTR, tamanhoRA);
   for (int i = 0; i < info->buffers_size; i++) {
-    buffs->buff_controllers_servers->buffer[i].counter_sensors = info->n_sensors; // buffer[0]??
+    buffs->buff_controllers_servers->buffer[i].counter_sensors = info->n_sensors;
     buffs->buff_controllers_servers->buffer[i].counter_servers = info->n_servers;
   }
 };
@@ -90,12 +109,12 @@ void read_estimate(struct info_container *info, int m_id) {};
 void print_stat(struct info_container *info) {};
 
 void help(void) {
-  printf("Available operations: \n"); 
-  printf(" measure - start a measurement cycle with one measurement per sensor. \n"); 
-  printf(" read <cycle id> - read the estimate for a cycle. \n"); 
-  printf(" stat - print the current system state. \n"); 
+  printf("Available operations: \n");
+  printf(" measure - start a measurement cycle with one measurement per sensor. \n");
+  printf(" read <cycle id> - read the estimate for a cycle. \n");
+  printf(" stat - print the current system state. \n");
   printf(" help - show this menu. \n");
-  printf(" end - terminates SOestimate. \n"); 
+  printf(" end - terminates SOestimate. \n");
 };
 
 int main(int argc, char *argv[]) {
