@@ -30,5 +30,5 @@ server.o:
 clean:
 	rm -f obj\*.o main
 
-vallgrind:
+valgrind:
 	valgrind --leak-check=full --track-origins=yes ./main.o
