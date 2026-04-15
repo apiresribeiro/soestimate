@@ -1,3 +1,6 @@
+// Alexandre Ribeiro - 63723
+// André Vilarinho - 63727
+// Margarida Torres - 63751
 #include "main.h"
 #include "memory.h"
 #include "process.h"
@@ -5,8 +8,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-
 #include <unistd.h>
+
 void main_args(int argc, char *argv[], struct info_container *info) {
   if (argc != 4) {
     printf("[Main] Usage: ./SOestimate n_sensors n_servers buff_size");
@@ -120,8 +123,9 @@ void create_processes(struct info_container *info, struct buffers *buffs) {
 void user_interaction(struct info_container *info, struct buffers *buffs) {
   char input[16];
   while (!(*info->terminate)) {
-    printf("[Main] Enter command: ");
-    scanf("%s", input);
+    printf("\n[Main] Enter command: ");
+    fflush(stdout);
+    scanf("%15s", input);
 
     if (strcmp(input, "measure") == 0) {
       MeasurementInfo req;
@@ -158,8 +162,13 @@ void user_interaction(struct info_container *info, struct buffers *buffs) {
 };
 
 void write_final_statistics(struct info_container *info) {
+  int total_generated = 0;
+  for (int i = 0; i < info->n_sensors; i++) {
+    total_generated += info->num_generated_measurements[i];
+  }
+
   printf("[Main] Final SOestimate statistics:\n");
-  printf("[Main] Total generated measurements: %d\n", *info->total_measurements);
+  printf("[Main] Total generated measurements: %d\n", total_generated);
 
   for (int i = 0; i < info->n_sensors; i++) {
     printf("[Main] Sensor %d generated %d measurements (%d invalid after validation).\n", i, info->num_generated_measurements[i], info->num_invalid_measurements[i]);
@@ -223,12 +232,12 @@ void print_stat(struct info_container *info) {
 };
 
 void help(void) {
-  printf("[Main] Available operations: \n");
-  printf("[Main]  measure - start a measurement cycle with one measurement per sensor. \n");
-  printf("[Main]  read <cycle id> - read the estimate for a cycle. \n");
-  printf("[Main]  stat - print the current system state. \n");
-  printf("[Main]  help - show this menu. \n");
-  printf("[Main]  end - terminates SOestimate. \n");
+  printf("[Main] Available operations:\n");
+  printf("[Main]  measure - start a measurement cycle with one measurement per sensor.\n");
+  printf("[Main]  read <cycle_id> - read the estimate for a cycle.\n");
+  printf("[Main]  stat - print the current system state.\n");
+  printf("[Main]  help - show this menu.\n");
+  printf("[Main]  end - terminate SOestimate.\n");
 };
 
 int main(int argc, char *argv[]) {

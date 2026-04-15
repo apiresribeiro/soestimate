@@ -1,3 +1,6 @@
+// Alexandre Ribeiro - 63723
+// André Vilarinho - 63727
+// Margarida Torres - 63751
 #include "server.h"
 #include "memory.h"
 #include <stdio.h>
@@ -118,7 +121,9 @@ void server_print_estimate(int server_id, int m_id, double estimate, int valid_c
   // Se houver pelo menos um valor válido, imprimir a informação
   if (valid_count > 0) {
     printf("[Server %d] New estimate: cycle %d = %.4f (valid_count=%d)\n", server_id, m_id, estimate, valid_count);
+    fflush(stdout);
   } else {
     printf("[Server %d] Cycle %d all measurements were invalid\n", server_id, m_id);
+    fflush(stdout);
   }
 };

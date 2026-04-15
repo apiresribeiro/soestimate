@@ -1,3 +1,6 @@
+# Alexandre Ribeiro - 63723
+# André Vilarinho - 63727
+# Margarida Torres - 63751
 CC = gcc
 CFLAGS = -Wall -g -Iinc
 OBJS= ${OBJS_DIR}controller.o ${OBJS_DIR}memory.o ${OBJS_DIR}sensor.o ${OBJS_DIR}server.o ${OBJS_DIR}random_measurement.o ${OBJS_DIR}process.o
@@ -5,9 +8,12 @@ OBJS_DIR = obj/
 src = src/
 obj = -o obj/
 bin = -o bin/
+RUN_ARGS ?= 1 1 2
+
+.PHONY: run clean valgrind
 
 run: SOestimate
-	./SOestimate
+	./bin/SOestimate $(RUN_ARGS)
 
 SOestimate: ${OBJS}
 	${CC} ${CFLAGS} ${OBJS} ${src}main.c ${bin}SOestimate -lm
@@ -38,7 +44,7 @@ ${OBJS_DIR}%.o: ${src}%.c
 	$(CC) $(CFLAGS) -c $< -o $@
 
 clean:
-	rm -f ${OBJS_DIR}*.o main SOestimate
+	rm -f ${OBJS_DIR}*.o bin/SOestimate
 
 valgrind:
-	valgrind --leak-check=full --track-origins=yes ./SOestimate
+	valgrind --leak-check=full --track-origins=yes ./bin/SOestimate $(RUN_ARGS)

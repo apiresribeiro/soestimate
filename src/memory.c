@@ -1,3 +1,6 @@
+// Alexandre Ribeiro - 63723
+// André Vilarinho - 63727
+// Margarida Torres - 63751
 #include "memory.h"
 #include <fcntl.h>
 #include <stdio.h>

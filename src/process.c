@@ -1,3 +1,6 @@
+// Alexandre Ribeiro - 63723
+// André Vilarinho - 63727
+// Margarida Torres - 63751
 #include "process.h"
 #include "controller.h"
 #include "sensor.h"

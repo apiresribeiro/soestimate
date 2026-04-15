@@ -1,3 +1,6 @@
+// Alexandre Ribeiro - 63723
+// André Vilarinho - 63727
+// Margarida Torres - 63751
 #include "../inc/controller.h"
 #include "../inc/main.h"
 #include "../inc/memory.h"
