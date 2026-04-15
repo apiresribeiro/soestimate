@@ -1,14 +1,16 @@
+#include "main.h"
 #include "memory.h"
 #include "process.h"
-#include "string.h";
+#include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <unistd.h>
+#include <string.h>
 
+#include <unistd.h>
 void main_args(int argc, char *argv[], struct info_container *info) {
   if (argc != 4) {
     printf("[Main] Usage: ./SOestimate n_sensors n_servers buff_size");
-    exit(0);
+    exit(1);
   }
   info->n_sensors = atoi(argv[1]);
   info->n_servers = atoi(argv[2]);
@@ -121,7 +123,7 @@ void user_interaction(struct info_container *info, struct buffers *buffs) {
     printf("[Main] Enter command: ");
     scanf("%s", input);
 
-    if (strcmp(input, "measure")) {
+    if (strcmp(input, "measure") == 0) {
       MeasurementInfo req;
       req.state = REQUEST;
       req.m_id = *info->total_measurements + 1;
@@ -131,44 +133,122 @@ void user_interaction(struct info_container *info, struct buffers *buffs) {
       req.counter_sensors = info->n_sensors;
       req.counter_servers = info->n_servers;
 
-      int ok = 0;
-      while (ok && !(*info->terminate)) {
+      int ok = false;
+      while (!ok && !(*info->terminate)) {
         ok = write_main_sensors_buffer(buffs->buff_main_sensors, info->buffers_size, &req);
       }
 
       if (ok) {
         *info->total_measurements = req.m_id;
+        printf("[Main] Measurement cycle started with m_id=%d.\n", req.m_id);
       }
-    } else if (strcmp(input, "read")) {
+    } else if (strcmp(input, "read") == 0) {
+      int m_id = -1;
+      read_estimate(info, m_id);
+    } else if (strcmp(input, "stat") == 0) {
+      print_stat(info);
+    } else if (strcmp(input, "help") == 0) {
+      help();
+    } else if (strcmp(input, "end") == 0) {
+      *info->terminate = 1;
+    } else {
+      printf("[Main] Unknown command. Type 'help'.\n");
     }
   }
 };
 
-void write_final_statistics(struct info_container *info) {};
+void write_final_statistics(struct info_container *info) {
+  printf("[Main] Final SOestimate statistics:\n");
+  printf("[Main] Total generated measurements: %d\n", *info->total_measurements);
+
+  for (int i = 0; i < info->n_sensors; i++) {
+    printf("[Main] Sensor %d generated %d measurements (%d invalid after validation).\n", i, info->num_generated_measurements[i], info->num_invalid_measurements[i]);
+  }
+
+  for (int i = 0; i < info->n_servers; i++) {
+    printf("[Main] Server %d computed %d estimates.\n", i, info->num_estimates[i]);
+  }
+};
 
 void end_execution(struct info_container *info, struct buffers *buffs) {
-  destroy_dynamic_memory_structs(info, buffs);
-  destroy_shared_memory_structs(info, buffs);
   *info->terminate = 1;
+  wait_processes(info);
+  write_final_statistics(info);
+  destroy_shared_memory_structs(info, buffs);
+  destroy_dynamic_memory_structs(info, buffs);
 };
 
 void wait_processes(struct info_container *info) {
-  // process.h
+  for (int i = 0; i < info->n_sensors; i++) {
+    wait_process(info->sensors_pids[i]);
+  }
+
+  for (int i = 0; i < info->n_sensors; i++) {
+    wait_process(info->controllers_pids[i]);
+  }
+
+  for (int i = 0; i < info->n_servers; i++) {
+    wait_process(info->servers_pids[i]);
+  }
 };
 
-void read_estimate(struct info_container *info, int m_id) {};
+void read_estimate(struct info_container *info, int m_id) {
+  (void)info;
+  (void)m_id;
+  printf("[Main] Unimplemented command (P2-only).\n");
+};
 
-void print_stat(struct info_container *info) {};
+void print_stat(struct info_container *info) {
+  printf("[Main] Current SOestimate state:\n");
+  printf("[Main] n_sensors=%d, n_servers=%d, buffers_size=%d\n", info->n_sensors, info->n_servers, info->buffers_size);
+  printf("[Main] terminate=%d, total_measurements=%d\n", *info->terminate, *info->total_measurements);
+
+  // Sensors
+  printf("[Main] Sensors:\n");
+  for (int i = 0; i < info->n_sensors; i++) {
+    printf("[Main]  sensor=%d pid=%d generated=%d\n", i, info->sensors_pids[i], info->num_generated_measurements[i]);
+  }
+
+  // Controllers
+  printf("[Main] Controllers:\n");
+  for (int i = 0; i < info->n_sensors; i++) {
+    printf("[Main]  controller=%d pid=%d\n", i, info->controllers_pids[i]);
+  }
+
+  // Servers
+  printf("[Main] Servers:\n");
+  for (int i = 0; i < info->n_servers; i++) {
+    printf("[Main]  server=%d pid=%d estimates=%d\n", i, info->servers_pids[i], info->num_estimates[i]);
+  }
+};
 
 void help(void) {
-  printf("Available operations: \n");
-  printf(" measure - start a measurement cycle with one measurement per sensor. \n");
-  printf(" read <cycle id> - read the estimate for a cycle. \n");
-  printf(" stat - print the current system state. \n");
-  printf(" help - show this menu. \n");
-  printf(" end - terminates SOestimate. \n");
+  printf("[Main] Available operations: \n");
+  printf("[Main]  measure - start a measurement cycle with one measurement per sensor. \n");
+  printf("[Main]  read <cycle id> - read the estimate for a cycle. \n");
+  printf("[Main]  stat - print the current system state. \n");
+  printf("[Main]  help - show this menu. \n");
+  printf("[Main]  end - terminates SOestimate. \n");
 };
 
 int main(int argc, char *argv[]) {
+  struct info_container info;
+
+  struct buffers buffs;
+  main_args(argc, argv, &info);
+  create_dynamic_memory_structs(&info, &buffs);
+  create_shared_memory_structs(&info, &buffs);
+  create_processes(&info, &buffs);
+
+  printf("[Main] Available operations:\n");
+  printf("[Main]  measure\n");
+  printf("[Main]  read <cycle_id>\n");
+  printf("[Main]  stat\n");
+  printf("[Main]  help\n");
+  printf("[Main]  end\n\n");
+
+  user_interaction(&info, &buffs);
+  end_execution(&info, &buffs);
+
   return 0;
 };
