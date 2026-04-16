@@ -125,9 +125,9 @@ void user_interaction(struct info_container *info, struct buffers *buffs) {
   while (!(*info->terminate)) {
     printf("\n[Main] Enter command: ");
     fflush(stdout);
-    scanf("%15s", input);
+    fgets(input, 15, stdin);
 
-    if (strcmp(input, "measure") == 0) {
+    if (strncmp(input, "measure", 7) == 0) {
       MeasurementInfo req;
       req.state = REQUEST;
       req.m_id = *info->total_measurements + 1;
@@ -146,14 +146,14 @@ void user_interaction(struct info_container *info, struct buffers *buffs) {
         *info->total_measurements = req.m_id;
         printf("[Main] Measurement cycle started with m_id=%d.\n", req.m_id);
       }
-    } else if (strcmp(input, "read") == 0) {
+    } else if (strncmp(input, "read", 4) == 0) {
       int m_id = -1;
       read_estimate(info, m_id);
-    } else if (strcmp(input, "stat") == 0) {
+    } else if (strncmp(input, "stat", 4) == 0) {
       print_stat(info);
-    } else if (strcmp(input, "help") == 0) {
+    } else if (strncmp(input, "help", 4) == 0) {
       help();
-    } else if (strcmp(input, "end") == 0) {
+    } else if (strncmp(input, "end", 3) == 0) {
       *info->terminate = 1;
     } else {
       printf("[Main] Unknown command. Type 'help'.\n");
