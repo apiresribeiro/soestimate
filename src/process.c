@@ -1,3 +1,4 @@
+// Grupo 1
 // Alexandre Ribeiro - 63723
 // André Vilarinho - 63727
 // Margarida Torres - 63751
@@ -32,6 +33,7 @@ int launch_process(enum process_type process_type, int process_id, struct info_c
     default:
       _exit(1);
     }
+    destroy_dynamic_memory_structs(info, buffs);
     _exit(ret);
   }
 
