@@ -12,13 +12,17 @@
 #include <unistd.h>
 
 void main_args(int argc, char *argv[], struct info_container *info) {
-  if (argc != 4) {
-    printf("[Main] Usage: ./SOestimate n_sensors n_servers buff_size");
-    exit(1);
+  if (argc == 3) {
+    printf("Argumentos corretos\n");
+    FILE *ficheirosSaida = fopen(argv[2], "r"); 
+    FILE *ficheiroEntrada = fopen(argv[1], "r"); 
+    if(ficheiroEntrada == NULL || ficheirosSaida == NULL){
+      printf ("Impossivel abrir ficheiros");
+      exit(1);
+    }
+    fscanf(ficheiroEntrada, "%d\n%d\n%d\n", &info->n_sensors, &info->n_servers, &info->buffers_size);
+    fscanf(ficheirosSaida, "%s\n%s\n%d\n", &info->log_filename, &info->statistics_filename, &info->period);
   }
-  info->n_sensors = atoi(argv[1]);
-  info->n_servers = atoi(argv[2]);
-  info->buffers_size = atoi(argv[3]);
 };
 
 void create_dynamic_memory_structs(struct info_container *info, struct buffers *buffs) {
@@ -163,21 +167,51 @@ void user_interaction(struct info_container *info, struct buffers *buffs) {
 };
 
 void write_final_statistics(struct info_container *info) {
+  FILE *ficheiroStatistics = fopen(info->statistics_filename, "w");
+  fprintf(ficheiroStatistics, "===== FINAL STATISTICS =====\n");
+  printf("===== FINAL STATISTICS =====\n");
+
+  fprintf(ficheiroStatistics, "Main PID %d: \n", getpid());
+  printf("Main PID %d:\n", getpid());
+
+  fprintf(ficheiroStatistics, "n_sensores=%d, n_servers=%d, buffers_size=%d\n", info->n_sensors, info->n_servers, info->buffers_size);
+  printf("n_sensors=%d, n_servers=%d, buffers_size=%d\n", info->n_sensors, info->n_servers, info->buffers_size);
+
   int total_generated = 0;
   for (int i = 0; i < info->n_sensors; i++) {
     total_generated += info->num_generated_measurements[i];
   }
+  fprintf(ficheiroStatistics, "total_measurements: %d\n", total_generated);
+  printf("total_measurements: %d\n", total_generated);
 
-  printf("[Main] Final SOestimate statistics:\n");
-  printf("[Main] Total generated measurements: %d\n", total_generated);
+  fprintf(ficheiroStatistics, "Sensors: \n");
+  printf("Sensores:\n");
+  for (int i = 0; i < info->n_sensors; i++) {
+    fprintf(ficheiroStatistics, "  Sensor %d (PID %d) : generated %d\n", i, info->sensors_pids[i], info->num_generated_measurements[i]);
+    printf("  Sensor %d (PID %d) : generated %d\n", i, info->sensors_pids[i], info->num_generated_measurements[i]);
+  }
+  fprintf(ficheiroStatistics, "Controllers:\n");
+  printf("Controllers:\n");
 
   for (int i = 0; i < info->n_sensors; i++) {
-    printf("[Main] Sensor %d generated %d measurements (%d invalid after validation).\n", i, info->num_generated_measurements[i], info->num_invalid_measurements[i]);
+    fprintf(ficheiroStatistics, "  controller = %d pid = %d\n", i, info->controllers_pids[i]);
+    printf("  controller = %d pid = %d\n ", i, info->controllers_pids[i]);
   }
+  fprintf(ficheiroStatistics, "Servers:\n");
+  printf("Servers:\n");
 
   for (int i = 0; i < info->n_servers; i++) {
-    printf("[Main] Server %d computed %d estimates.\n", i, info->num_estimates[i]);
+    fprintf(ficheiroStatistics, "  Server %d (PID %d) : estimates=%d\n", i, info->servers_pids[i], info->num_estimates[i]);
+    printf("  Server %d (PID %d) : estimates=%d\n", i, info->servers_pids[i], info->num_estimates[i]);
   }
+  
+  fprintf(ficheiroStatistics, "Last logged ID %d:\n", info->last_logged_id);
+  printf("Last logged ID %d:\n", *(info->last_logged_id));
+
+  fprintf(ficheiroStatistics, "============================");
+  printf("============================");
+
+  fclose(ficheiroStatistics);
 };
 
 void end_execution(struct info_container *info, struct buffers *buffs) {
