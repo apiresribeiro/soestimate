@@ -5,6 +5,7 @@
 #include "server.h"
 #include "memory.h"
 #include <stdio.h>
+#include <time.h>
 
 int execute_server(int server_id, struct info_container *info, struct buffers *buffs) {
   int expected_m_id = 1;               // Próximo ciclo que o servidor está a espera
@@ -16,6 +17,8 @@ int execute_server(int server_id, struct info_container *info, struct buffers *b
 
   // Loop principal, corre até a flag terminate
   while (!(*info->terminate)) {
+    struct timespec start_time, end_time;
+    clock_gettime(CLOCK_MONOTONIC, &start_time);
     // Início de nova ronda, limpar variáveis locais
     for (int i = 0; i < n_controllers; i++) {
       received_flags[i] = 0;
@@ -39,12 +42,16 @@ int execute_server(int server_id, struct info_container *info, struct buffers *b
       // Marcar controller recebido para esta ronda.
       if (m.controller_id >= 0 && m.controller_id < n_controllers) {
         received_flags[m.controller_id] = 1;
-      }
+      } 
 
       // Quando todas as contribuições da ronda estiverem processadas:
       if (server_process_measurement(&m, server_id, info, &estimate, &valid_count)) {
+        clock_gettime(CLOCK_MONOTONIC, &end_time);
+        double elapsed_time = (end_time.tv_sec - start_time.tv_sec) + (end_time.tv_nsec - start_time.tv_nsec) / 1000000000.0;
+
         // Imprimir o resultado da ronda
         server_print_estimate(server_id, expected_m_id, estimate, valid_count);
+        server_print_estimate_log(info, server_id, expected_m_id, estimate, valid_count, elapsed_time);
         expected_m_id++;
         break; // passa para a próxima ronda
       }
@@ -128,3 +135,9 @@ void server_print_estimate(int server_id, int m_id, double estimate, int valid_c
     fflush(stdout);
   }
 };
+
+void server_print_estimate_log(struct info_container *info, int server_id, int m_id, double estimate, int valid_count, double elapsed) {
+  if (valid_count > 0) {
+    print_server_result(info, server_id, m_id, estimate, elapsed);
+  } 
+}

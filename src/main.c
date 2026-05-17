@@ -5,6 +5,8 @@
 #include "main.h"
 #include "memory.h"
 #include "process.h"
+#include "clog.h"
+#include "cstats.h"
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -126,6 +128,7 @@ void create_processes(struct info_container *info, struct buffers *buffs) {
 };
 
 void user_interaction(struct info_container *info, struct buffers *buffs) {
+  reescrever_log_existente(info->log_filename);
   char input[16];
   while (!(*info->terminate)) {
     printf("\n[Main] Enter command: ");
@@ -133,6 +136,7 @@ void user_interaction(struct info_container *info, struct buffers *buffs) {
     fgets(input, 15, stdin);
 
     if (strncmp(input, "measure", 7) == 0) {
+      print_log(info, "measure");
       MeasurementInfo req;
       req.state = REQUEST;
       req.m_id = *info->total_measurements + 1;
@@ -153,12 +157,21 @@ void user_interaction(struct info_container *info, struct buffers *buffs) {
       }
     } else if (strncmp(input, "read", 4) == 0) {
       int m_id = -1;
-      read_estimate(info, m_id);
+      if (sscanf(input, "read %d", &m_id) == 1) {
+        input[strcspn(input, "\n")] = 0;
+        print_log(info,input);
+        read_estimate(info, m_id);
+      } else {
+        printf("[Main] Invalid command format. Use 'read <m_id>'.\n");
+      }
     } else if (strncmp(input, "stat", 4) == 0) {
+      print_log(info, "stat");
       print_stat(info);
     } else if (strncmp(input, "help", 4) == 0) {
+      print_log(info, "help");
       help();
     } else if (strncmp(input, "end", 3) == 0) {
+      print_log(info, "end");
       *info->terminate = 1;
     } else {
       printf("[Main] Unknown command. Type 'help'.\n");
@@ -167,55 +180,8 @@ void user_interaction(struct info_container *info, struct buffers *buffs) {
 };
 
 void write_final_statistics(struct info_container *info) {
-  FILE *ficheiroStatistics = fopen(info->statistics_filename, "w");
-  imprimeTextoSimples(ficheiroStatistics, "===== FINAL STATISTICS =====\n");
-
-  fprintf(ficheiroStatistics, "Main PID %d: \n", getpid());
-  printf("Main PID: %d\n", getpid());
-
-  fprintf(ficheiroStatistics, "n_sensores=%d, n_servers=%d, buffers_size=%d\n", info->n_sensors, info->n_servers, info->buffers_size);
-  printf("n_sensors=%d, n_servers=%d, buffers_size=%d\n", info->n_sensors, info->n_servers, info->buffers_size);
-
-  int total_generated = 0;
-  for (int i = 0; i < info->n_sensors; i++) {
-    total_generated += info->num_generated_measurements[i];
-  }
-  fprintf(ficheiroStatistics, "total_measurements: %d\n", total_generated);
-  printf("total_measurements: %d\n", total_generated);
-
-  imprimeTextoSimples (ficheiroStatistics, "Sensors:\n");
-
-  for (int i = 0; i < info->n_sensors; i++) {
-    fprintf(ficheiroStatistics, "  Sensor %d (PID %d) : generated %d\n", i, info->sensors_pids[i], info->num_generated_measurements[i]);
-    printf("  Sensor %d (PID %d) : generated %d\n", i, info->sensors_pids[i], info->num_generated_measurements[i]);
-  }
-
-  imprimeTextoSimples (ficheiroStatistics, "Controllers:\n");
-
-  for (int i = 0; i < info->n_sensors; i++) {
-    fprintf(ficheiroStatistics, "  controller = %d pid = %d\n", i, info->controllers_pids[i]);
-    printf("  controller = %d pid = %d\n", i, info->controllers_pids[i]);
-  }
-  imprimeTextoSimples (ficheiroStatistics, "Servers:\n");
-
-  for (int i = 0; i < info->n_servers; i++) {
-    fprintf(ficheiroStatistics, "  Server %d (PID %d) : estimates=%d\n", i, info->servers_pids[i], info->num_estimates[i]);
-    printf("  Server %d (PID %d) : estimates=%d\n", i, info->servers_pids[i], info->num_estimates[i]);
-  }
-  
-  fprintf(ficheiroStatistics, "Last logged ID %d:\n", *(info->last_logged_id));
-  printf("Last logged ID: %d\n", *(info->last_logged_id));
-
-  imprimeTextoSimples(ficheiroStatistics, "============================");
-
-  fclose(ficheiroStatistics);
+  write_stats(info);
 };
-
-void imprimeTextoSimples (FILE *ficheiroSaida, char *string){
-  fprintf(ficheiroSaida, "%s", string);
-  printf("%s", string);
-}
-
 void end_execution(struct info_container *info, struct buffers *buffs) {
   *info->terminate = 1;
   wait_processes(info);
