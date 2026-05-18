@@ -3,10 +3,10 @@
 // André Vilarinho - 63727
 // Margarida Torres - 63751
 #include "main.h"
-#include "memory.h"
-#include "process.h"
 #include "clog.h"
 #include "cstats.h"
+#include "memory.h"
+#include "process.h"
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -16,14 +16,20 @@
 void main_args(int argc, char *argv[], struct info_container *info) {
   if (argc == 3) {
     printf("Argumentos corretos\n");
-    FILE *ficheirosSaida = fopen(argv[2], "r"); 
-    FILE *ficheiroEntrada = fopen(argv[1], "r"); 
-    if(ficheiroEntrada == NULL || ficheirosSaida == NULL){
-      printf ("Impossivel abrir ficheiros");
+    FILE *ficheirosSaida = fopen(argv[2], "r");
+    FILE *ficheiroEntrada = fopen(argv[1], "r");
+    if (ficheiroEntrada == NULL || ficheirosSaida == NULL) {
+      printf("Impossivel abrir ficheiros");
       exit(1);
     }
     fscanf(ficheiroEntrada, "%d\n%d\n%d\n", &info->n_sensors, &info->n_servers, &info->buffers_size);
-    fscanf(ficheirosSaida, "%s\n%s\n%d\n", &info->log_filename, &info->statistics_filename, &info->period);
+    fscanf(ficheirosSaida, "%s\n%s\n%d\n", info->log_filename, info->statistics_filename, &info->period);
+
+    fclose(ficheiroEntrada);
+    fclose(ficheirosSaida);
+  } else {
+    perror("main_args");
+    exit(1);
   }
 };
 
@@ -128,7 +134,7 @@ void create_processes(struct info_container *info, struct buffers *buffs) {
 };
 
 void user_interaction(struct info_container *info, struct buffers *buffs) {
-  reescrever_log_existente(info->log_filename);
+  clean_log(info->log_filename);
   char input[16];
   while (!(*info->terminate)) {
     printf("\n[Main] Enter command: ");
@@ -136,7 +142,7 @@ void user_interaction(struct info_container *info, struct buffers *buffs) {
     fgets(input, 15, stdin);
 
     if (strncmp(input, "measure", 7) == 0) {
-      print_log(info, "measure");
+      write_log(info, "measure");
       MeasurementInfo req;
       req.state = REQUEST;
       req.m_id = *info->total_measurements + 1;
@@ -155,23 +161,24 @@ void user_interaction(struct info_container *info, struct buffers *buffs) {
         *info->total_measurements = req.m_id;
         printf("[Main] Measurement cycle started with m_id=%d.\n", req.m_id);
       }
+
     } else if (strncmp(input, "read", 4) == 0) {
       int m_id = -1;
       if (sscanf(input, "read %d", &m_id) == 1) {
         input[strcspn(input, "\n")] = 0;
-        print_log(info,input);
+        write_log(info, "read");
         read_estimate(info, m_id);
       } else {
         printf("[Main] Invalid command format. Use 'read <m_id>'.\n");
       }
     } else if (strncmp(input, "stat", 4) == 0) {
-      print_log(info, "stat");
+      write_log(info, "stat");
       print_stat(info);
     } else if (strncmp(input, "help", 4) == 0) {
-      print_log(info, "help");
+      write_log(info, "help");
       help();
     } else if (strncmp(input, "end", 3) == 0) {
-      print_log(info, "end");
+      write_log(info, "end");
       *info->terminate = 1;
     } else {
       printf("[Main] Unknown command. Type 'help'.\n");
