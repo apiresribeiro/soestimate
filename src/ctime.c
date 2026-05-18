@@ -1,9 +1,17 @@
 #include "ctime.h"
-#include <bits/time.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <time.h>
 
+void validate_timestamps(struct timestamps *ts) {
+  if (ts == NULL) {
+    perror("validate_timestamps");
+    exit(1);
+  }
+}
+
 void init_timestamps(struct timestamps *ts) {
+  validate_timestamps(ts);
   // Main
   ts->main_time.tv_sec = 0;
   ts->main_time.tv_nsec = 0;
@@ -22,28 +30,43 @@ void init_timestamps(struct timestamps *ts) {
 }
 
 void timestamp_main(struct timestamps *ts) {
+  validate_timestamps(ts);
   clock_gettime(CLOCK_REALTIME, &ts->main_time);
 }
 
 void timestamp_sensor(struct timestamps *ts) {
+  validate_timestamps(ts);
   clock_gettime(CLOCK_REALTIME, &ts->sensor_time);
 }
 
 void timestamp_controller(struct timestamps *ts) {
+  validate_timestamps(ts);
   clock_gettime(CLOCK_REALTIME, &ts->controller_time);
 }
 
 void timestamp_server(struct timestamps *ts) {
+  validate_timestamps(ts);
   clock_gettime(CLOCK_REALTIME, &ts->server_time);
 }
 
 double timespec_diff(struct timespec *start, struct timespec *end) {
+  if (start == NULL) {
+    perror("timespec_diff_start");
+    exit(1);
+  }
+
+  if (end == NULL) {
+    perror("timespec_diff_end");
+    exit(1);
+  }
+
   return (end->tv_sec - start->tv_sec) + (end->tv_nsec - start->tv_nsec) / 1e9;
 }
 
 void format_current_time(char *out, size_t out_size) {
   if (out == NULL || out_size == 0) {
-    return;
+    perror("format_current_time");
+    exit(1);
   }
 
   struct timespec ts;
