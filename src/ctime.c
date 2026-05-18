@@ -1,5 +1,4 @@
 #include "ctime.h"
-#include <bits/time.h>
 #include <stdio.h>
 #include <time.h>
 
