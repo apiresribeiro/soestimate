@@ -7,6 +7,7 @@
 #include "cstats.h"
 #include "memory.h"
 #include "process.h"
+#include "synchronization.h"
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -195,6 +196,7 @@ void end_execution(struct info_container *info, struct buffers *buffs) {
   write_final_statistics(info);
   destroy_shared_memory_structs(info, buffs);
   destroy_dynamic_memory_structs(info, buffs);
+  destroy_all_semaphores(info->sems);
 };
 
 void wait_processes(struct info_container *info) {
@@ -257,6 +259,7 @@ int main(int argc, char *argv[]) {
   main_args(argc, argv, &info);
   create_dynamic_memory_structs(&info, &buffs);
   create_shared_memory_structs(&info, &buffs);
+  info.sems = create_all_semaphores(info.buffers_size);
   create_processes(&info, &buffs);
 
   printf("[Main] Available operations:\n");
