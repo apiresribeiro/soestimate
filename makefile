@@ -3,7 +3,7 @@
 # André Vilarinho - 63727
 # Margarida Torres - 63751
 CC = gcc
-CFLAGS = -Wall -g -Iinc
+CFLAGS = -Wall -g -Iinc -D_POSIX_C_SOURCE=200809L
 OBJS= ${OBJS_DIR}controller.o ${OBJS_DIR}memory.o ${OBJS_DIR}sensor.o ${OBJS_DIR}server.o ${OBJS_DIR}random_measurement.o ${OBJS_DIR}process.o ${OBJS_DIR}clog.o ${OBJS_DIR}ctime.o ${OBJS_DIR}cstats.o ${OBJS_DIR}csettings.o ${OBJS_DIR}csignal.o ${OBJS_DIR}synchronization.o
 OBJS_DIR = obj/
 src = src/

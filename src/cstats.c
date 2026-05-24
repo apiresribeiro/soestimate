@@ -1,10 +1,14 @@
+// Grupo 1
+// Alexandre Ribeiro - 63723
+// André Vilarinho - 63727
+// Margarida Torres - 63751
 #include "cstats.h"
 #include <stdio.h>
 #include <unistd.h>
 
 void imprimeTextoSimples(FILE *ficheiroSaida, char *string) {
-    fprintf(ficheiroSaida, "%s", string);
-    printf("%s", string);
+  fprintf(ficheiroSaida, "%s", string);
+  printf("%s", string);
 }
 
 void write_stats(struct info_container *info) {
@@ -29,26 +33,26 @@ void write_stats(struct info_container *info) {
   fprintf(ficheiroStatistics, "total_measurements=%d\n", total_generated);
   printf("total_measurements=%d\n", total_generated);
 
-  imprimeTextoSimples (ficheiroStatistics, "Sensors:\n");
+  imprimeTextoSimples(ficheiroStatistics, "Sensors:\n");
 
   for (int i = 0; i < info->n_sensors; i++) {
     fprintf(ficheiroStatistics, " Sensor %d (PID %d): generated=%d\n", i, info->sensors_pids[i], info->num_generated_measurements[i]);
     printf(" Sensor %d (PID %d): generated=%d\n", i, info->sensors_pids[i], info->num_generated_measurements[i]);
   }
 
-  imprimeTextoSimples (ficheiroStatistics, "Controllers:\n");
+  imprimeTextoSimples(ficheiroStatistics, "Controllers:\n");
 
   for (int i = 0; i < info->n_sensors; i++) {
     fprintf(ficheiroStatistics, " controller=%d pid=%d\n", i, info->controllers_pids[i]);
     printf(" controller=%d pid=%d\n", i, info->controllers_pids[i]);
   }
-  imprimeTextoSimples (ficheiroStatistics, "Servers:\n");
+  imprimeTextoSimples(ficheiroStatistics, "Servers:\n");
 
   for (int i = 0; i < info->n_servers; i++) {
     fprintf(ficheiroStatistics, " Server %d (PID %d): estimates=%d\n", i, info->servers_pids[i], info->num_estimates[i]);
     printf(" Server %d (PID %d): estimates=%d\n", i, info->servers_pids[i], info->num_estimates[i]);
   }
-  
+
   fprintf(ficheiroStatistics, "Last logged ID: %d\n", *(info->last_logged_id));
   printf("Last logged ID: %d\n", *(info->last_logged_id));
 

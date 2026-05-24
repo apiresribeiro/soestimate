@@ -1,5 +1,4 @@
 #pragma once
-#define _POSIX_C_SOURCE 200809L
 #include <time.h>
 
 struct timestamps {
@@ -23,3 +22,6 @@ double timespec_diff(struct timespec *start, struct timespec *end);
 
 // Formata para: YYYYMMDD HH:MM:SS.mmm
 void format_current_time(char *out, size_t out_size);
+
+// Converte YYYYMMDD e HH:MM:SS.mmm para segundos Unix
+double parse_formatted_timestamp(const char *date, const char *clock_str);

@@ -62,6 +62,7 @@ void sensor_process_request(MeasurementInfo *m, int sensor_id, struct info_conta
   // Se o estado da medição for REQUEST então proceder ao próximo passo
   if (m->state == REQUEST) {
     m->state = MEASURED;
+    timestamp_sensor(&m->change_time);
     info->num_generated_measurements[sensor_id]++;
     m->sensor_id = sensor_id;
     m->value = get_measurement();

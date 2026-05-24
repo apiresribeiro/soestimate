@@ -1,6 +1,11 @@
+// Grupo 1
+// Alexandre Ribeiro - 63723
+// André Vilarinho - 63727
+// Margarida Torres - 63751
 #include "ctime.h"
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <time.h>
 
 void validate_timestamps(struct timestamps *ts) {
@@ -88,4 +93,43 @@ void format_current_time(char *out, size_t out_size) {
            tm_now.tm_min,
            tm_now.tm_sec,
            ms);
+}
+
+double parse_formatted_timestamp(const char *date, const char *clock_str) {
+  int year;
+  int month;
+  int day;
+  int hour;
+  int minute;
+  int second;
+  int ms;
+
+  if (date == NULL || clock_str == NULL) {
+    return -1.0;
+  }
+
+  if (sscanf(date, "%4d%2d%2d", &year, &month, &day) != 3) {
+    return -1.0;
+  }
+
+  if (sscanf(clock_str, "%2d:%2d:%2d.%3d", &hour, &minute, &second, &ms) != 4) {
+    return -1.0;
+  }
+
+  struct tm tm_value;
+  memset(&tm_value, 0, sizeof(tm_value));
+  tm_value.tm_year = year - 1900;
+  tm_value.tm_mon = month - 1;
+  tm_value.tm_mday = day;
+  tm_value.tm_hour = hour;
+  tm_value.tm_min = minute;
+  tm_value.tm_sec = second;
+  tm_value.tm_isdst = -1;
+
+  time_t unix_time = mktime(&tm_value);
+  if (unix_time == (time_t)-1) {
+    return -1.0;
+  }
+
+  return (double)unix_time + ((double)ms / 1000.0);
 }

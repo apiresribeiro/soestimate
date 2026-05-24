@@ -5,6 +5,7 @@
 #include "main.h"
 #include "csignal.h"
 #include "clog.h"
+#include "csettings.h"
 #include "cstats.h"
 #include "memory.h"
 #include "process.h"
@@ -20,20 +21,16 @@ struct info_container *info = NULL;
 struct buffers *buffs = NULL;
 
 void main_args(int argc, char *argv[], struct info_container *info) {
-  if (argc == 3) {
-    FILE *ficheirosSaida = fopen(argv[2], "r");
-    FILE *ficheiroEntrada = fopen(argv[1], "r");
-    if (ficheiroEntrada == NULL || ficheirosSaida == NULL) {
-      printf("Impossivel abrir ficheiros");
-      exit(1);
-    }
-    fscanf(ficheiroEntrada, "%d\n%d\n%d\n", &info->n_sensors, &info->n_servers, &info->buffers_size);
-    fscanf(ficheirosSaida, "%s\n%s\n%d\n", info->log_filename, info->statistics_filename, &info->period);
-
-    fclose(ficheiroEntrada);
-    fclose(ficheirosSaida);
-  } else {
+  if (argc != 3) {
     perror("main_args");
+    exit(1);
+  }
+
+  if (read_args_file(argv[1], info) != 0) {
+    exit(1);
+  }
+
+  if (read_settings_file(argv[2], info) != 0) {
     exit(1);
   }
 };
@@ -144,6 +141,11 @@ void user_interaction(struct info_container *info, struct buffers *buffs) {
   clean_log(info->log_filename);
   char input[16];
   while (!(*info->terminate)) {
+    if (consume_alarm_tick()) {
+      printf("\n");
+      print_alarm_status();
+    }
+
     printf("\n[Main] Enter command: ");
     fflush(stdout);
     if (fgets(input, 15, stdin) == NULL) {
@@ -166,6 +168,8 @@ void user_interaction(struct info_container *info, struct buffers *buffs) {
       req.value = 0.0;
       req.counter_sensors = info->n_sensors;
       req.counter_servers = info->n_servers;
+      init_timestamps(&req.change_time);
+      timestamp_main(&req.change_time);
 
       int ok = false;
       while (!ok && !(*info->terminate)) {

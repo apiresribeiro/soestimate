@@ -59,6 +59,7 @@ void controller_receive_measurement(MeasurementInfo *m, int controller_id, struc
 void controller_process_measurement(MeasurementInfo *m, int controller_id, struct info_container *info) {
   // Coloca o id do controllador no struct
   m->controller_id = controller_id;
+  timestamp_controller(&m->change_time);
   // Se for inválido, então incrementar também o número de medições inválidas
   if (!is_valid_measurement(m->value)) {
     info->num_invalid_measurements[controller_id]++;

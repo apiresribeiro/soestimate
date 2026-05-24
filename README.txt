@@ -3,14 +3,61 @@ Projeto de Sistemas Operativos - FCUL 2025-2026, desenvolvido por:
   André Vilarinho - 63727
   Margarida Torres - 63751
 
-Para correr o projeto deve fazer:
-  $ make clean
-  $ make
-  $ ./SOEstimate n_sensors n_servers buff_size
+####################################################
+#                 Compilação                       #
+####################################################
 
-Opcionalmente pode fazer:
-  $ make valgrind - Para verificar o output do da ferramenta Valgrind
+  make clean
+  make SOestimate
 
-Deve correr o projeto com número de entidades reduzidas (ex. $ ./SOestimate 1 1 2)
-para evitar problemas de sincronização, que são uma limitação desta primeira fase do
-projeto.
+####################################################
+#                   Execução                       #
+####################################################
+
+Nesta fase, o programa recebe dois ficheiros:
+  ./bin/SOestimate args.txt settings.txt
+
+####################################################
+#                    Formato                       #
+####################################################
+
+Formato dos ficheiros de entrada:
+  args.txt:
+
+  Cada linha contém:
+    1) n_sensors
+    2) n_servers
+    3) buffers_size
+  Exemplo:
+    4
+    4
+    8
+
+  settings.txt:
+
+  Cada linha contém:
+    1) log_filename
+    2) statistics_filename
+    3) period
+  Exemplo:
+    log.txt
+    stats.txt
+    5
+
+####################################################
+#                   Comandos                       #
+####################################################
+
+Comandos suportados:
+- measure
+- read <cycle_id>
+- stat
+- help
+- end
+
+####################################################
+#                      Notas                       #
+####################################################
+
+- Se num ciclo não existir resultado válido, pode não ser escrita linha "result" para esse ciclo no log.
+- O comando read <j> devolve o resultado encontrado no log para a ronda j; se não existir, indica que não foi encontrado.

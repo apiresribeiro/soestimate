@@ -25,8 +25,6 @@ int execute_server(int server_id, struct info_container *info, struct buffers *b
 
   // Loop principal, corre até a flag terminate
   while (!(*info->terminate)) {
-    struct timespec start_time, end_time;
-    clock_gettime(CLOCK_MONOTONIC, &start_time);
     // Início de nova ronda, limpar variáveis locais
     for (int i = 0; i < n_controllers; i++) {
       received_flags[i] = 0;
@@ -54,8 +52,7 @@ int execute_server(int server_id, struct info_container *info, struct buffers *b
 
       // Quando todas as contribuições da ronda estiverem processadas:
       if (server_process_measurement(&m, server_id, info, &estimate, &valid_count)) {
-        clock_gettime(CLOCK_MONOTONIC, &end_time);
-        double elapsed_time = timespec_diff(&start_time, &end_time);
+        double elapsed_time = timespec_diff(&m.change_time.main_time, &m.change_time.server_time);
         // Imprimir o resultado da ronda
         server_print_estimate_log(info, server_id, expected_m_id, estimate, valid_count, elapsed_time);
         expected_m_id++;
@@ -118,6 +115,8 @@ int server_process_measurement(MeasurementInfo *m, int server_id, struct info_co
     sum = 0.0;
     *valid_count = 0;
   }
+
+  timestamp_server(&m->change_time);
 
   // Inicio da medição
   count++;

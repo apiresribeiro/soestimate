@@ -1,3 +1,7 @@
+// Grupo 1
+// Alexandre Ribeiro - 63723
+// André Vilarinho - 63727
+// Margarida Torres - 63751
 #include "clog.h"
 #include "ctime.h"
 #include <stdio.h>
