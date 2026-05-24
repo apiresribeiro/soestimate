@@ -1,4 +1,5 @@
 #include "synchronization.h"
+#include "main.h"
 #include <fcntl.h>
 #include <semaphore.h>
 #include <stdio.h>
@@ -60,7 +61,7 @@ struct semaphores *create_all_semaphores(unsigned value) {
   sems->controllers_servers = create_buffer_semaphores(value, SEM_CONTROLLERS_SERVERS_UNREAD, SEM_CONTROLLERS_SERVERS_FREE, SEM_CONTROLLERS_SERVERS_MUTEX);
 
   sems->terminate_mutex = create_semaphore(SEM_TERMINATE_MUTEX, 1);
-  sems->log_mutex = create_semaphore(SEM_LOG_MUTEX, value);
+  sems->log_mutex = create_semaphore(SEM_LOG_MUTEX, 1);
 
   return sems;
 }
@@ -81,11 +82,59 @@ void destroy_all_semaphores(struct semaphores *sems) {
 }
 
 void print_all_semaphores(struct semaphores *sems) {
+  if (sems == NULL) {
+    return;
+  }
+
   int value;
+
   // Main -> Sensors
   sem_getvalue(sems->main_sensors->unread, &value);
-  printf("Nome: %d\n", value);
+  printf("main_sensors.unread: %d\n", value);
+  sem_getvalue(sems->main_sensors->free_space, &value);
+  printf("main_sensors.free_space: %d\n", value);
+  sem_getvalue(sems->main_sensors->mutex, &value);
+  printf("main_sensors.mutex: %d\n", value);
+
+  // Sensors -> Controllers
+  sem_getvalue(sems->sensors_controllers->unread, &value);
+  printf("sensors_controllers.unread: %d\n", value);
+  sem_getvalue(sems->sensors_controllers->free_space, &value);
+  printf("sensors_controllers.free_space: %d\n", value);
+  sem_getvalue(sems->sensors_controllers->mutex, &value);
+  printf("sensors_controllers.mutex: %d\n", value);
+
+  // Controllers -> Servers
+  sem_getvalue(sems->controllers_servers->unread, &value);
+  printf("controllers_servers.unread: %d\n", value);
+  sem_getvalue(sems->controllers_servers->free_space, &value);
+  printf("controllers_servers.free_space: %d\n", value);
+  sem_getvalue(sems->controllers_servers->mutex, &value);
+  printf("controllers_servers.mutex: %d\n", value);
+
+  // Log Mutex
+  sem_getvalue(sems->log_mutex, &value);
+  printf("log_mutex: %d\n", value);
+
+  // Terminate Mutex
+  sem_getvalue(sems->terminate_mutex, &value);
+  printf("terminate_mutex: %d\n", value);
 }
 
 void wakeup_processes(struct info_container *info) {
+  if (info == NULL || info->sems == NULL) {
+    return;
+  }
+
+  int n_process = info->n_servers + info->n_sensors + 2;
+
+  // Pode haver mais que 1 processo bloqueado!
+  for (int i = 0; i < n_process; i++) {
+    sem_post(info->sems->main_sensors->unread);
+    sem_post(info->sems->main_sensors->free_space);
+    sem_post(info->sems->sensors_controllers->unread);
+    sem_post(info->sems->sensors_controllers->free_space);
+    sem_post(info->sems->controllers_servers->unread);
+    sem_post(info->sems->controllers_servers->free_space);
+  }
 }
