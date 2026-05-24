@@ -16,7 +16,6 @@
 
 void main_args(int argc, char *argv[], struct info_container *info) {
   if (argc == 3) {
-    printf("Argumentos corretos\n");
     FILE *ficheirosSaida = fopen(argv[2], "r");
     FILE *ficheiroEntrada = fopen(argv[1], "r");
     if (ficheiroEntrada == NULL || ficheirosSaida == NULL) {
@@ -84,6 +83,7 @@ void create_shared_memory_structs(struct info_container *info, struct buffers *b
   info->num_estimates = create_shared_memory(ID_SHM_SERVERS_PROCESSED, info->n_servers * sizeof(int));
   info->total_measurements = create_shared_memory(ID_SHM_TOTAL_MEASUREMENTS, sizeof(int));
   info->terminate = create_shared_memory(ID_SHM_TERMINATE, sizeof(int));
+  info->last_logged_id = create_shared_memory(ID_SHM_LAST_LOGGED_ID, sizeof(int));
 };
 
 void destroy_dynamic_memory_structs(struct info_container *info, struct buffers *buffs) {
@@ -117,6 +117,7 @@ void destroy_shared_memory_structs(struct info_container *info, struct buffers *
   destroy_shared_memory(ID_SHM_SERVERS_PROCESSED, info->num_estimates, info->n_servers * sizeof(int));
   destroy_shared_memory(ID_SHM_TOTAL_MEASUREMENTS, info->total_measurements, sizeof(int));
   destroy_shared_memory(ID_SHM_TERMINATE, info->terminate, sizeof(int));
+  destroy_shared_memory(ID_SHM_LAST_LOGGED_ID, info->last_logged_id, sizeof(int));
 };
 
 void create_processes(struct info_container *info, struct buffers *buffs) {
@@ -140,7 +141,10 @@ void user_interaction(struct info_container *info, struct buffers *buffs) {
   while (!(*info->terminate)) {
     printf("\n[Main] Enter command: ");
     fflush(stdout);
-    fgets(input, 15, stdin);
+    if (fgets(input, 15, stdin) == NULL) {
+      *info->terminate = 1;
+      break;
+    }
 
     if (strncmp(input, "measure", 7) == 0) {
       write_log(info, "measure");
@@ -155,7 +159,18 @@ void user_interaction(struct info_container *info, struct buffers *buffs) {
 
       int ok = false;
       while (!ok && !(*info->terminate)) {
+        sem_wait(info->sems->main_sensors->free_space);
+        sem_wait(info->sems->main_sensors->mutex);
         ok = write_main_sensors_buffer(buffs->buff_main_sensors, info->buffers_size, &req);
+        sem_post(info->sems->main_sensors->mutex);
+
+        if (ok) {
+          for (int i = 0; i < info->n_sensors; i++) {
+            sem_post(info->sems->main_sensors->unread);
+          }
+        } else {
+          sem_post(info->sems->main_sensors->free_space);
+        }
       }
 
       if (ok) {
@@ -166,8 +181,9 @@ void user_interaction(struct info_container *info, struct buffers *buffs) {
     } else if (strncmp(input, "read", 4) == 0) {
       int m_id = -1;
       if (sscanf(input, "read %d", &m_id) == 1) {
-        input[strcspn(input, "\n")] = 0;
-        write_log(info, "read");
+        char read_command[32];
+        snprintf(read_command, sizeof(read_command), "read %d", m_id);
+        write_log(info, read_command);
         read_estimate(info, m_id);
       } else {
         printf("[Main] Invalid command format. Use 'read <m_id>'.\n");
@@ -192,6 +208,7 @@ void write_final_statistics(struct info_container *info) {
 };
 void end_execution(struct info_container *info, struct buffers *buffs) {
   *info->terminate = 1;
+  wakeup_processes(info);
   wait_processes(info);
   write_final_statistics(info);
   destroy_shared_memory_structs(info, buffs);
@@ -214,9 +231,55 @@ void wait_processes(struct info_container *info) {
 };
 
 void read_estimate(struct info_container *info, int m_id) {
-  (void)info;
-  (void)m_id;
-  printf("[Main] Unimplemented command (P2-only).\n");
+  if (m_id <= 0) {
+    printf("[Main] Invalid cycle id. Use a value >= 1.\n");
+    return;
+  }
+
+  sem_wait(info->sems->log_mutex);
+
+  FILE *file = fopen(info->log_filename, "r");
+  if (file == NULL) {
+    sem_post(info->sems->log_mutex);
+    printf("[Main] Could not open log file '%s'.\n", info->log_filename);
+    return;
+  }
+
+  char line[256];
+  int found = 0;
+  int server_id = -1;
+  double estimate = 0.0;
+  double elapsed = 0.0;
+
+  while (fgets(line, sizeof(line), file) != NULL) {
+    int parsed_m_id;
+    int parsed_server_id;
+    double parsed_estimate;
+    double parsed_elapsed;
+
+    int parsed = sscanf(line,
+                        "%*s %*s result %d server %d estimate %lf elapsed %lf",
+                        &parsed_m_id,
+                        &parsed_server_id,
+                        &parsed_estimate,
+                        &parsed_elapsed);
+
+    if (parsed == 4 && parsed_m_id == m_id) {
+      found = 1;
+      server_id = parsed_server_id;
+      estimate = parsed_estimate;
+      elapsed = parsed_elapsed;
+    }
+  }
+
+  fclose(file);
+  sem_post(info->sems->log_mutex);
+
+  if (found) {
+    printf("[Main] estimate for cycle %d = %.4f (server %d, elapsed %.3f)\n", m_id, estimate, server_id, elapsed);
+  } else {
+    printf("[Main] no estimate found for cycle %d\n", m_id);
+  }
 };
 
 void print_stat(struct info_container *info) {

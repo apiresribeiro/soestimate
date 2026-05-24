@@ -7,6 +7,7 @@
 #include "../inc/memory.h"
 #include "../inc/random_measurement.h"
 #include <stdbool.h>
+#include <unistd.h>
 
 int execute_controller(int controller_id, struct info_container *info, struct buffers *buffs) {
   // Estrutura local para guardar a medição lida do buffer partilhado.
@@ -39,7 +40,18 @@ void controller_receive_measurement(MeasurementInfo *m, int controller_id, struc
   m->m_id = -1;
   // Tentar recever do buffer sempre que a flag permitir
   while (m->m_id == -1 && !(*info->terminate)) {
+    sem_wait(info->sems->sensors_controllers->unread);
+    sem_wait(info->sems->sensors_controllers->mutex);
     read_sensor_controller_buffer(buffs->buff_sensors_controllers, controller_id, info->buffers_size, m);
+    sem_post(info->sems->sensors_controllers->mutex);
+
+    if (m->m_id != -1) {
+      sem_post(info->sems->sensors_controllers->free_space);
+      return;
+    }
+
+    sem_post(info->sems->sensors_controllers->unread);
+    usleep(1000);
   }
 };
 
@@ -60,6 +72,17 @@ void controller_send_measurement(MeasurementInfo *m, struct info_container *info
   bool success = false;
   // Tentar sempre escrever no buffer sempre que a flag terminate não tiver ativa
   while (!success && !(*info->terminate)) {
+    sem_wait(info->sems->controllers_servers->free_space);
+    sem_wait(info->sems->controllers_servers->mutex);
     success = write_controller_servers_buffer(buffs->buff_controllers_servers, info->buffers_size, m);
+    sem_post(info->sems->controllers_servers->mutex);
+
+    if (success) {
+      for (int i = 0; i < info->n_servers; i++) {
+        sem_post(info->sems->controllers_servers->unread);
+      }
+    } else {
+      sem_post(info->sems->controllers_servers->free_space);
+    }
   }
 };

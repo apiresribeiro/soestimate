@@ -6,6 +6,7 @@
 #include "memory.h"
 #include "random_measurement.h"
 #include "stdbool.h"
+#include <unistd.h>
 
 int execute_sensor(int sensor_id, struct info_container *info, struct buffers *buffs) {
   // Seed ranodmizada para o random_measurement
@@ -39,7 +40,20 @@ void sensor_receive_request(MeasurementInfo *req, int expected_m_id, struct info
 
   // Enquanto não existir requests, tentar ler até à flag estar ativa
   while (req->m_id == -1 && !(*info->terminate)) {
+    sem_wait(info->sems->main_sensors->unread);
+    sem_wait(info->sems->main_sensors->mutex);
     read_main_sensors_buffer(buffs->buff_main_sensors, info->buffers_size, expected_m_id, req);
+    sem_post(info->sems->main_sensors->mutex);
+
+    if (req->m_id != -1) {
+      if (req->counter_sensors == 1) {
+        sem_post(info->sems->main_sensors->free_space);
+      }
+      return;
+    }
+
+    sem_post(info->sems->main_sensors->unread);
+    usleep(1000);
   }
 }
 
@@ -58,6 +72,15 @@ void sensor_send_measurement(MeasurementInfo *m, struct info_container *info, st
 
   // Enquanto não a escrita não der sucesso, tentar escrever até à flag não permitir
   while (!success && !(*info->terminate)) {
+    sem_wait(info->sems->sensors_controllers->free_space);
+    sem_wait(info->sems->sensors_controllers->mutex);
     success = write_sensor_controller_buffer(buffs->buff_sensors_controllers, info->buffers_size, m);
+    sem_post(info->sems->sensors_controllers->mutex);
+
+    if (success) {
+      sem_post(info->sems->sensors_controllers->unread);
+    } else {
+      sem_post(info->sems->sensors_controllers->free_space);
+    }
   }
 }

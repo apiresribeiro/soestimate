@@ -8,6 +8,7 @@
 #include "memory.h"
 #include <stdio.h>
 #include <time.h>
+#include <unistd.h>
 
 void server_print_estimate_log(struct info_container *info, int server_id, int m_id, double estimate, int valid_count, double elapsed) {
   if (valid_count > 0) {
@@ -81,7 +82,22 @@ void read_expected_cycle_measurement(MeasurementInfo *m, int expected_m_id, cons
     if (expected_controller_id == -1) {
       break; // ronda já completa
     }
+
+    sem_wait(info->sems->controllers_servers->unread);
+    sem_wait(info->sems->controllers_servers->mutex);
     read_controller_servers_buffer(buffs->buff_controllers_servers, info->buffers_size, expected_m_id, expected_controller_id, m);
+
+    sem_post(info->sems->controllers_servers->mutex);
+
+    if (m->m_id != -1) {
+      if (m->counter_servers == 1) {
+        sem_post(info->sems->controllers_servers->free_space);
+      }
+      return;
+    }
+
+    sem_post(info->sems->controllers_servers->unread);
+    usleep(1000);
   }
 }
 

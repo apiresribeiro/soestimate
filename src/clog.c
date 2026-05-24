@@ -20,6 +20,7 @@ void write_log(struct info_container *info, const char *command) {
   FILE *file = fopen(info->log_filename, "a"); // a -> modo append
   if (file == NULL) {
     perror("write_log");
+    sem_post(info->sems->log_mutex);
     exit(1);
   }
 
@@ -35,9 +36,15 @@ void write_log(struct info_container *info, const char *command) {
 void write_server_result(struct info_container *info, int server_id, int m_id, double estimate, double elapsed_time) {
   sem_wait(info->sems->log_mutex);
 
+  if (*(info->last_logged_id) >= m_id) {
+    sem_post(info->sems->log_mutex);
+    return;
+  }
+
   FILE *file = fopen(info->log_filename, "a"); // a -> modo append
   if (file == NULL) {
     perror("write_server_result");
+    sem_post(info->sems->log_mutex);
     exit(1);
   }
 
@@ -46,6 +53,8 @@ void write_server_result(struct info_container *info, int server_id, int m_id, d
 
   fprintf(file, "%s result %d server %d estimate %.4f elapsed %.3f\n", time, m_id, server_id, estimate, elapsed_time);
   fclose(file);
+
+  *(info->last_logged_id) = m_id;
 
   sem_post(info->sems->log_mutex);
 }

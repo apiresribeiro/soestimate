@@ -9,7 +9,7 @@ OBJS_DIR = obj/
 src = src/
 obj = -o obj/
 bin = -o bin/
-RUN_ARGS ?= 1 1 2
+RUN_ARGS ?= args.txt settings.txt
 
 .PHONY: run clean valgrind
 
