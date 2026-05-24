@@ -8,7 +8,6 @@
 #include "memory.h"
 #include <stdio.h>
 #include <time.h>
-#include <unistd.h>
 
 void server_print_estimate_log(struct info_container *info, int server_id, int m_id, double estimate, int valid_count, double elapsed) {
   if (valid_count > 0) {
@@ -97,7 +96,8 @@ void read_expected_cycle_measurement(MeasurementInfo *m, int expected_m_id, cons
     }
 
     sem_post(info->sems->controllers_servers->unread);
-    usleep(1000);
+    struct timespec ts = {0, 1000000};
+    nanosleep(&ts, NULL);
   }
 }
 

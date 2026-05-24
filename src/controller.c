@@ -7,7 +7,7 @@
 #include "../inc/memory.h"
 #include "../inc/random_measurement.h"
 #include <stdbool.h>
-#include <unistd.h>
+#include <time.h>
 
 int execute_controller(int controller_id, struct info_container *info, struct buffers *buffs) {
   // Estrutura local para guardar a medição lida do buffer partilhado.
@@ -51,7 +51,8 @@ void controller_receive_measurement(MeasurementInfo *m, int controller_id, struc
     }
 
     sem_post(info->sems->sensors_controllers->unread);
-    usleep(1000);
+    struct timespec ts = {0, 1000000};
+    nanosleep(&ts, NULL);
   }
 };
 

@@ -6,7 +6,7 @@
 #include "memory.h"
 #include "random_measurement.h"
 #include "stdbool.h"
-#include <unistd.h>
+#include <time.h>
 
 int execute_sensor(int sensor_id, struct info_container *info, struct buffers *buffs) {
   // Seed ranodmizada para o random_measurement
@@ -53,7 +53,8 @@ void sensor_receive_request(MeasurementInfo *req, int expected_m_id, struct info
     }
 
     sem_post(info->sems->main_sensors->unread);
-    usleep(1000);
+    struct timespec ts = {0, 1000000};
+    nanosleep(&ts, NULL);
   }
 }
 

@@ -4,7 +4,7 @@
 # Margarida Torres - 63751
 CC = gcc
 CFLAGS = -Wall -g -Iinc
-OBJS= ${OBJS_DIR}controller.o ${OBJS_DIR}memory.o ${OBJS_DIR}sensor.o ${OBJS_DIR}server.o ${OBJS_DIR}random_measurement.o ${OBJS_DIR}process.o ${OBJS_DIR}clog.o ${OBJS_DIR}ctime.o ${OBJS_DIR}cstats.o ${OBJS_DIR}csettings.o ${OBJS_DIR}synchronization.o
+OBJS= ${OBJS_DIR}controller.o ${OBJS_DIR}memory.o ${OBJS_DIR}sensor.o ${OBJS_DIR}server.o ${OBJS_DIR}random_measurement.o ${OBJS_DIR}process.o ${OBJS_DIR}clog.o ${OBJS_DIR}ctime.o ${OBJS_DIR}cstats.o ${OBJS_DIR}csettings.o ${OBJS_DIR}csignal.o ${OBJS_DIR}synchronization.o
 OBJS_DIR = obj/
 src = src/
 obj = -o obj/
@@ -42,6 +42,9 @@ ctime.o:
 
 csettings.o:
 	${CC} ${CFLAGS} ${src}csettings.c ${obj}csettings.o -lm
+
+csignal.o:
+	${CC} ${CFLAGS} ${src}csignal.c ${obj}csignal.o -lm
 
 cstats.o:
 	${CC} ${CFLAGS} ${src}cstats.c ${obj}cstats.o -lm

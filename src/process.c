@@ -3,6 +3,7 @@
 // André Vilarinho - 63727
 // Margarida Torres - 63751
 #include "process.h"
+#include "csignal.h"
 #include "controller.h"
 #include "sensor.h"
 #include "server.h"
@@ -19,6 +20,8 @@ int launch_process(enum process_type process_type, int process_id, struct info_c
 
   // Processo filho
   if (pid == 0) {
+    ignore_signals();
+
     int ret;
     switch (process_type) {
     case SENSOR_PROCESS:

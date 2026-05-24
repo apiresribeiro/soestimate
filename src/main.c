@@ -3,16 +3,21 @@
 // André Vilarinho - 63727
 // Margarida Torres - 63751
 #include "main.h"
+#include "csignal.h"
 #include "clog.h"
 #include "cstats.h"
 #include "memory.h"
 #include "process.h"
 #include "synchronization.h"
 #include <stdbool.h>
+#include <errno.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
+
+struct info_container *info = NULL;
+struct buffers *buffs = NULL;
 
 void main_args(int argc, char *argv[], struct info_container *info) {
   if (argc == 3) {
@@ -142,6 +147,11 @@ void user_interaction(struct info_container *info, struct buffers *buffs) {
     printf("\n[Main] Enter command: ");
     fflush(stdout);
     if (fgets(input, 15, stdin) == NULL) {
+      if (ferror(stdin) && errno == EINTR) {
+        clearerr(stdin);
+        continue;
+      }
+
       *info->terminate = 1;
       break;
     }
@@ -316,14 +326,18 @@ void help(void) {
 };
 
 int main(int argc, char *argv[]) {
-  struct info_container info;
+  struct info_container info_local;
+  struct buffers buffs_local;
 
-  struct buffers buffs;
-  main_args(argc, argv, &info);
-  create_dynamic_memory_structs(&info, &buffs);
-  create_shared_memory_structs(&info, &buffs);
-  info.sems = create_all_semaphores(info.buffers_size);
-  create_processes(&info, &buffs);
+  info = &info_local;
+  buffs = &buffs_local;
+
+  main_args(argc, argv, info);
+  create_dynamic_memory_structs(info, buffs);
+  create_shared_memory_structs(info, buffs);
+  info->sems = create_all_semaphores(info->buffers_size);
+  create_processes(info, buffs);
+  setup_signal_handlers();
 
   printf("[Main] Available operations:\n");
   printf("[Main]  measure\n");
@@ -332,8 +346,8 @@ int main(int argc, char *argv[]) {
   printf("[Main]  help\n");
   printf("[Main]  end\n\n");
 
-  user_interaction(&info, &buffs);
-  end_execution(&info, &buffs);
+  user_interaction(info, buffs);
+  end_execution(info, buffs);
 
   return 0;
 };
